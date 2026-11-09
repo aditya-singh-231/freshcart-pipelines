@@ -1,5 +1,12 @@
 .env
+.env.*
 *.pkl
 *.csv
+*.log
 mage.log
 __pycache__/
+*.py[cod]
+.pytest_cache/
+.ssh_tunnel/
+/iris_project/io_config.yaml
+/iris_project/dbt/profiles.yml
