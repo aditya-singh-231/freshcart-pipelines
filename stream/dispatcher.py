@@ -42,6 +42,8 @@ count = 0
 try:
     while time.monotonic() - start < args.duration:
 
+        count += 1
+
         city = random.choice(cities)
         zone = random.choice(zones[city])
         order_type = random.choice(types)
@@ -56,6 +58,11 @@ try:
             "ts": datetime.now(timezone.utc).isoformat()
         }
 
+        bad_message = count % 10 == 0
+
+        if bad_message:
+            message.pop("zone")
+
         channel.basic_publish(
             exchange=EXCHANGE,
             routing_key=routing_key,
@@ -66,12 +73,17 @@ try:
             )
         )
 
-        count += 1
-
-        print(
-            f"Published #{count}: {routing_key} | {message}",
-            flush=True
-        )
+        if bad_message:
+            print(
+                f"Published BAD #{count}: {routing_key} | "
+                "missing zone field",
+                flush=True
+            )
+        else:
+            print(
+                f"Published GOOD #{count}: {routing_key}",
+                flush=True
+            )
 
         time.sleep(2)
 

@@ -42,23 +42,47 @@ channel.basic_qos(prefetch_count=1)
 
 print(f"{name} started. Pattern: {pattern}", flush=True)
 
+
 def receive_message(ch, method, properties, body):
+
     try:
         message = json.loads(body)
 
+        if not isinstance(message, dict) or not message.get("zone"):
+
+            ch.basic_nack(
+                delivery_tag=method.delivery_tag,
+                requeue=False
+            )
+
+            print(
+                f"{name} NACK: {method.routing_key} | "
+                "missing zone | discarded",
+                flush=True
+            )
+            return
+
+        ch.basic_ack(
+            delivery_tag=method.delivery_tag
+        )
+
         print(
-            f"{name} received: {method.routing_key} | {message}",
+            f"{name} ACK: {method.routing_key} | {message}",
             flush=True
         )
 
-        ch.basic_ack(delivery_tag=method.delivery_tag)
-
     except Exception as e:
-        print(f"{name} processing error: {e}", flush=True)
+
         ch.basic_nack(
             delivery_tag=method.delivery_tag,
             requeue=False
         )
+
+        print(
+            f"{name} NACK: invalid message | {e}",
+            flush=True
+        )
+
 
 channel.basic_consume(
     queue=queue_name,
@@ -68,8 +92,10 @@ channel.basic_consume(
 
 try:
     channel.start_consuming()
+
 except KeyboardInterrupt:
     print(f"{name} stopped.")
+
 finally:
     if connection.is_open:
         connection.close()
